@@ -6,12 +6,12 @@ namespace LegacyApp
     {
         public bool AddUser(string firstName, string lastName, string email, DateTime dateOfBirth, int clientId)
         {
-            if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName))
+            if (IsFirstNameCorrect(firstName) || IsLastNameCorrect(lastName))
             {
                 return false;
             }
 
-            if (!email.Contains("@") && !email.Contains("."))
+            if (IsEmailCorrect(email))
             {
                 return false;
             }
@@ -20,10 +20,7 @@ namespace LegacyApp
             int age = now.Year - dateOfBirth.Year;
             if (now.Month < dateOfBirth.Month || (now.Month == dateOfBirth.Month && now.Day < dateOfBirth.Day)) age--;
 
-            if (age < 21)
-            {
-                return false;
-            }
+            if (!IsAgeCorrect(age)) return false;
 
             var clientRepository = new ClientRepository();
             var client = clientRepository.GetById(clientId);
@@ -37,11 +34,11 @@ namespace LegacyApp
                 LastName = lastName
             };
 
-            if (client.Type == "VeryImportantClient")
+            if (IsClientTypeVeryImportantClient(client))
             {
                 user.HasCreditLimit = false;
             }
-            else if (client.Type == "ImportantClient")
+            else if (IsClientTypeImportantClient(client))
             {
                 using (var userCreditService = new UserCreditService())
                 {
@@ -60,13 +57,53 @@ namespace LegacyApp
                 }
             }
 
-            if (user.HasCreditLimit && user.CreditLimit < 500)
+            if (IsCreditLimitCorrect(user))
             {
                 return false;
             }
 
             UserDataAccess.AddUser(user);
             return true;
+        }
+
+        private static bool IsCreditLimitCorrect(User user)
+        {
+            return user.HasCreditLimit && user.CreditLimit < 500;
+        }
+
+        private static bool IsClientTypeImportantClient(Client client)
+        {
+            return client.Type == "ImportantClient";
+        }
+
+        private static bool IsClientTypeVeryImportantClient(Client client)
+        {
+            return client.Type == "VeryImportantClient";
+        }
+
+        private static bool IsAgeCorrect(int age)
+        {
+            if (age < 21)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsEmailCorrect(string email)
+        {
+            return !email.Contains("@") && !email.Contains(".");
+        }
+
+        private static bool IsLastNameCorrect(string lastName)
+        {
+            return string.IsNullOrEmpty(lastName);
+        }
+
+        private static bool IsFirstNameCorrect(string firstName)
+        {
+            return string.IsNullOrEmpty(firstName);
         }
     }
 }
